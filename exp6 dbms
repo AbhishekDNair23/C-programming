@@ -1,0 +1,63 @@
+CREATE TABLE Items ( Itemid INT PRIMARY KEY,Itemname VARCHAR(50),Category VARCHAR(50),Price DECIMAL(10,2),Instock INT CHECK (Instock >= 0));
+INSERT INTO Items VALUES (1,'Samsung GalaxyS4','Mobile',6000,10);
+INSERT INTO Items VALUES (2,'IQOO Neo 10R','Mobile',9000,6);
+INSERT INTO Items VALUES (3,'Asus Laptop','Electronics',6500,7);
+INSERT INTO Items VALUES (4,'Boat Earbuds','Headset',1000,12);
+INSERT INTO Items VALUES (5,'Iphone 17','Mobile',7000,5);
+INSERT INTO Items VALUES (6,'Lenovo Tablet','Electronics',5200,6);
+
+
+CREATE TABLE Customers (Custid INT PRIMARY KEY,Custname VARCHAR(50),Address VARCHAR(100),State VARCHAR(20));
+INSERT INTO Customers VALUES (101,'John','12Park Street','California');
+INSERT INTO Customers VALUES (102,'James','45 Lake View','Texas');
+INSERT INTO Customers VALUES (103,'Mickey','78 Main Road','Florida');
+INSERT INTO Customers VALUES (104,'Jenny','90 Hill Street','California');
+INSERT INTO Customers VALUES (105,'Robert','11 Sunset Blvd','Nevada');
+INSERT INTO Customers VALUES (106,'Julia','22 Green Ave','Texas');
+
+CREATE TABLE Orderss (orderid INT PRIMARY KEY,Itemid INT,Custid INT,Quantity INT,Orderdate DATE,FOREIGN KEY (Itemid) REFERENCES Items(Itemid),FOREIGN KEY (Custid) REFERENCES Customers(Custid));
+INSERT INTO Orderss VALUES (1001,1,101,2,TO_DATE('10-FEB-2013','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1002,2,102,1,TO_DATE('15-JUN-2014','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1003,3,103,1,TO_DATE('20-DEC-2012','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1004,1,103,3,TO_DATE('05-JAN-2015','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1005,4,104,1,TO_DATE('12-MAR-2016','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1006,6,106,2,TO_DATE('19-JUL-2018','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1007,5,105,4,TO_DATE('25-SEP-2013','DD-MON-YYYY'));
+INSERT INTO Orderss VALUES (1008,3,101,1,TO_DATE('11-NOV-2017','DD-MON-YYYY'));
+
+CREATE TABLE Delivery (deliveryid INT PRIMARY KEY,Custid INT,orderid INT,FOREIGN KEY (Custid) REFERENCES Customers(Custid),FOREIGN KEY (Orderid) REFERENCES Orderss(Orderid));
+INSERT INTO Delivery VALUES (5001,101,1001);
+INSERT INTO Delivery VALUES (5002,102,1002);
+INSERT INTO Delivery VALUES (5003,103,1003);
+INSERT INTO Delivery VALUES (5004,104,1005);
+INSERT INTO Delivery VALUES (5005,106,1006);
+
+SELECT DISTINCT * FROM Customers  INNER JOIN Orderss  ON Customers.Custid=Orderss.Custid;
+
+SELECT DISTINcT * FROM Customers INNER JOIN Orderss ON Customers.Custid=Orderss.custid INNER JOIN Delivery on Delivery.orderid=Orderss.orderid;
+
+SELECT c.Custname,o.Orderdate FROM Customers c INNER JOIN Orderss o ON c.Custid=o.Custid WHERE c.Custname LIKE 'J%';
+
+SELECT i.Itemname,i.Price FROM Customers c INNER JOIN Orderss o ON c.Custid=o.Custid INNER JOIN Items i ON o.Itemid=i.Itemid WHERE c.Custname='Mickey';
+
+SELECT DISTINCT c.* FROM Customers c INNER JOIN Orderss o ON c.Custid=o.Custid WHERE o.Orderdate>TO_DATE('31-JAN-2013','DD-MON-YYYY') AND NOT EXISTS (SELECT 1 FROM Delivery d WHERE d.Orderid=o.Orderid);
+
+SELECT DISTINCT i.Itemid,i.Itemname FROM Items i INNER JOIN Orderss o ON i.Itemid=o.Itemid UNION SELECT DISTINCT i.Itemid,i.Itemname FROM Items i INNER JOIN Orderss o ON i.Itemid=o.Itemid LEFT JOIN Delivery d ON o.Orderid=d.Orderid WHERE d.Deliveryid IS NULL;
+
+SELECT DISTINCT c.Custname FROM Customers c INNER JOIN Orderss o ON c.Custid=o.Custid INNER JOIN Delivery d ON o.Orderid=d.Orderid;
+
+SELECT DISTINCT c.Custname FROM Customers c WHERE c.Custid IN (SELECT o.Custid FROM Orderss o) MINUS SELECT DISTINCT c.Custname FROM Customers c WHERE c.Custid IN (SELECT o.Custid FROM Orderss o JOIN Delivery d ON o.Orderid=d.Orderid);
+
+SELECT * FROM (SELECT c.Custname,COUNT(o.Orderid) AS TotalOrders FROM Customers c JOIN Orderss o ON c.Custid=o.Custid GROUP BY c.Custname ORDER BY COUNT(o.Orderid) DESC) WHERE ROWNUM=1;
+
+SELECT DISTINCT c.* FROM Customers c JOIN Orderss o ON c.Custid=o.Custid JOIN Items i ON o.Itemid=i.Itemid WHERE (o.Quantity*i.Price)>5000;
+
+SELECT * FROM Customers c WHERE c.Custid NOT IN (SELECT o.Custid FROM Orderss o JOIN Items i ON o.Itemid=i.Itemid WHERE i.Itemname='Samsung GalaxyS4');
+
+SELECT c.Custid,c.Custname,o.Orderid FROM Customers c LEFT JOIN Orderss o ON c.Custid=o.Custid;
+
+SELECT c.Custid,c.Custname,o.Orderid FROM Customers c RIGHT JOIN Orderss o ON c.Custid=o.Custid;
+
+SELECT State,COUNT(*) AS Total_Customers FROM Customers GROUP BY State;
+
+SELECT Category,Itemname,Price FROM Items WHERE Price>(SELECT AVG(Price) FROM Items);
